@@ -1279,11 +1279,11 @@ _historySeries(room, hours) {
     `;
   }
 
-  getConfigElement() {
+  static getConfigElement() {
     return document.createElement("room-climate-card-editor");
   }
 
-  getStubConfig() {
+  static getStubConfig() {
     return {
       title: "Temperaturen/Luftfeuchtigkeit",
       columns: 2,
