@@ -1374,56 +1374,56 @@ class RoomClimateCardEditor extends HTMLElement {
           align-items: center;
           gap: 12px;
         }
-        .columns-row ha-icon-button {
-          --mdc-icon-button-size: 36px;
+        .columns-row button {
+          width: 36px;
+          height: 36px;
+          border: 1px solid var(--divider-color, rgba(127,127,127,0.35));
+          border-radius: 8px;
+          background: var(--secondary-background-color, rgba(0,0,0,0.05));
+          color: var(--primary-text-color);
+          font-size: 1.2rem;
+          line-height: 1;
+          cursor: pointer;
         }
         .columns-row .value {
           min-width: 24px;
           text-align: center;
           font-weight: 600;
         }
-        ha-textfield,
-        ha-slider {
+        input[type="text"] {
           width: 100%;
+          box-sizing: border-box;
+          padding: 10px 12px;
+          border: 1px solid var(--divider-color, rgba(127,127,127,0.35));
+          border-radius: 8px;
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color);
+          font: inherit;
         }
       </style>
       <div class="editor">
         <div class="row">
           <label>Titel</label>
-          <ha-textfield
-            id="title"
-            label="Titel"
-            value="${this._attr(title)}"
-          ></ha-textfield>
+          <input type="text" id="title" value="${this._attr(title)}" />
         </div>
 
         <div class="row">
           <label>Spalten</label>
           <div class="columns-row">
-            <ha-icon-button
-              id="cols-minus"
-              label="Weniger Spalten"
-              data-delta="-1"
-              ><ha-icon icon="mdi:minus"></ha-icon
-            ></ha-icon-button>
+            <button id="cols-minus" type="button" data-delta="-1">−</button>
             <span class="value" id="cols-value">${columns}</span>
-            <ha-icon-button
-              id="cols-plus"
-              label="Mehr Spalten"
-              data-delta="1"
-              ><ha-icon icon="mdi:plus"></ha-icon
-            ></ha-icon-button>
+            <button id="cols-plus" type="button" data-delta="1">+</button>
           </div>
         </div>
 
         <div class="row">
           <label>Ausgeschlossene Bereiche</label>
-          <ha-textfield
+          <input
+            type="text"
             id="exclude"
-            label="Ausgeschlossene Bereiche"
             value="${this._attr(exclude)}"
-            helper="Kommagetrennt, z. B. fussboden, fußboden"
-          ></ha-textfield>
+            placeholder="Kommagetrennt, z. B. fussboden, fußboden"
+          />
         </div>
       </div>
     `;
@@ -1447,7 +1447,7 @@ class RoomClimateCardEditor extends HTMLElement {
       );
     }
 
-    this.shadowRoot.querySelectorAll(".columns-row ha-icon-button").forEach((btn) => {
+    this.shadowRoot.querySelectorAll(".columns-row button").forEach((btn) => {
       btn.addEventListener("click", () => {
         const delta = Number(btn.dataset.delta);
         const current = Number.isFinite(Number(this._config.columns))
