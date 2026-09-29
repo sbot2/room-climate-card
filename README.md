@@ -18,9 +18,9 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
 
 1. Öffne HACS → **Frontend**.
 2. Klicke auf **„Benutzerdefiniertes Repository hinzufügen“** (`⋮` → Custom repositories).
-3. Füge die URL deines Forgejo/Git-Repository ein. Beispiel:
+3. Füge die folgende URL ein:
    ```
-   https://git.example.com/<benutzer>/room-climate
+   https://git.stebot76.noip.me/stephan/room-climate-card
    ```
 4. Wähle als Kategorie **Lovelace**.
 5. Lade Home Assistant neu (ggf. `Strg+Shift+R` im Browser).

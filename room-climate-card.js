@@ -1278,9 +1278,148 @@ _historySeries(room, hours) {
       </style>
     `;
   }
+
+  getConfigElement() {
+    return document.createElement("room-climate-card-editor");
+  }
+
+  getStubConfig() {
+    return {
+      title: "Temperaturen/Luftfeuchtigkeit",
+      columns: 2,
+      exclude_areas: ["fussboden", "fußboden"],
+    };
+  }
 }
 
-customElements.define("room-climate-card", RoomClimateCard);
+const ROOM_CLIMATE_EDITOR_SCHEMA = [
+  {
+    name: "title",
+    label: "Titel",
+    selector: { text: {} },
+    flatten: true,
+  },
+  {
+    name: "columns",
+    label: "Spalten",
+    selector: {
+      number: {
+        mode: "slider",
+        min: 1,
+        max: 4,
+        step: 1,
+      },
+    },
+    context: { icon: "mdi:view-column" },
+    flatten: true,
+  },
+  {
+    name: "exclude_areas",
+    label: "Ausgeschlossene Bereiche",
+    selector: { text: { multiline: false } },
+    context: { hint: 'Kommagetrennt, z. B. "fussboden, fußboden"' },
+    flatten: true,
+  },
+];
+
+class RoomClimateCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+  }
+
+  setConfig(config) {
+    this._config = { ...config };
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _normalize(config) {
+    const c = { ...config };
+    if (Array.isArray(c.exclude_areas)) {
+      c.exclude_areas = c.exclude_areas.join(", ");
+    }
+    return c;
+  }
+
+  _computeLabel(schema) {
+    return schema.label || schema.name;
+  }
+
+  _computeHelper(schema) {
+    if (schema.name === "exclude_areas") {
+      return 'Kommagetrennt, z. B. "fussboden, fußboden"';
+    }
+    return "";
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+    if (!this._config) return;
+
+    const config = this._normalize(this._config);
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          --content-padding: 0;
+        }
+        .editor {
+          display: grid;
+          gap: 16px;
+          padding: 8px 0;
+        }
+        ha-form {
+          width: 100%;
+        }
+      </style>
+      <div class="editor">
+        <ha-form
+          .hass=${this._hass}
+          .data=${config}
+          .schema=${ROOM_CLIMATE_EDITOR_SCHEMA}
+          .computeLabel=${this._computeLabel}
+          .computeHelper=${this._computeHelper}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+      </div>
+    `;
+  }
+
+  _valueChanged(ev) {
+    const value = ev.detail.value;
+    const newConfig = { ...value };
+    if (typeof newConfig.exclude_areas === "string") {
+      newConfig.exclude_areas = newConfig.exclude_areas
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+    this._config = newConfig;
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: newConfig },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+}
+
+customElements.define("room-climate-card-editor", RoomClimateCardEditor);
+
+window.customEditors = window.customEditors || [];
+window.customEditors.push({
+  type: "room-climate-card",
+  name: "Room Climate Card",
+  element: "room-climate-card-editor",
+});
 
 window.customCards = window.customCards || [];
 window.customCards.push({
