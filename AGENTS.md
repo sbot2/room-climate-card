@@ -45,7 +45,7 @@ Räume (Bereiche) ohne **einen einzigen** Temperatur-/Feuchte-Wert **und** ohne 
 - `hacs.json` mit `content_in_root: true` und `filename: room-climate-card.js`.
 - Kategorie im HACS-Store: **Dashboard** (Frontend).
 - Keine CI/Workflows mehr (`.github` wurde entfernt – das Repo liegt auf einem selbst gehosteten Forgejo, HACS-Validierung wäre dort nicht nutzbar).
-- Git-Push kann gelegentlich mit `Credentials are incorrect`: einfach ein zweites Mal `git push` versuchen.
+- Git-Push kann gelegentlich mit `Credentials are incorrect` fehlschlagen. Bei **jedem** fehlgeschlagenen `git push` immer **zuerst automatisch einen zweiten Versuch** ausführen. Erst wenn auch der zweite Versuch scheitert, den Nutzer um manuelles Eingreifen bitten.
 
 ## Verifikation
 
