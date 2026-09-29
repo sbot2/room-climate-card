@@ -1310,12 +1310,15 @@ class RoomClimateCardEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...config };
-    this._render();
+    if (!this.shadowRoot.querySelector("#title")) {
+      this._render();
+    }
   }
 
   set hass(hass) {
+    const first = !this._hass;
     this._hass = hass;
-    this._render();
+    if (first) this._render();
   }
 
   _update(patch) {
@@ -1427,14 +1430,14 @@ class RoomClimateCardEditor extends HTMLElement {
 
     const titleField = this.shadowRoot.querySelector("#title");
     if (titleField) {
-      titleField.addEventListener("change", (ev) =>
+      titleField.addEventListener("input", (ev) =>
         this._update({ title: ev.target.value })
       );
     }
 
     const excludeField = this.shadowRoot.querySelector("#exclude");
     if (excludeField) {
-      excludeField.addEventListener("change", (ev) =>
+      excludeField.addEventListener("input", (ev) =>
         this._update({
           exclude_areas: ev.target.value
             .split(",")
