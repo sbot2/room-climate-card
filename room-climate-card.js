@@ -147,8 +147,16 @@ class RoomClimateCard extends HTMLElement {
     const excluded = this._config.exclude_areas.map((x) =>
       String(x).trim().toLowerCase()
     );
-    return excluded.includes(String(area.name || "").trim().toLowerCase()) ||
-      excluded.includes(String(area.area_id || "").trim().toLowerCase());
+    const floor = this._floorForArea(area);
+    const candidates = [
+      area.name,
+      area.area_id,
+      floor?.name,
+      floor?.floor_id,
+    ]
+      .filter((x) => x != null)
+      .map((x) => String(x).trim().toLowerCase());
+    return candidates.some((candidate) => excluded.includes(candidate));
   }
 
   _deviceAreaId(deviceId) {
