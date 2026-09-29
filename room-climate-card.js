@@ -1294,36 +1294,6 @@ _historySeries(room, hours) {
   }
 }
 
-const ROOM_CLIMATE_EDITOR_SCHEMA = [
-  {
-    name: "title",
-    label: "Titel",
-    selector: { text: {} },
-    flatten: true,
-  },
-  {
-    name: "columns",
-    label: "Spalten",
-    selector: {
-      number: {
-        mode: "slider",
-        min: 1,
-        max: 4,
-        step: 1,
-      },
-    },
-    context: { icon: "mdi:view-column" },
-    flatten: true,
-  },
-  {
-    name: "exclude_areas",
-    label: "Ausgeschlossene Bereiche",
-    selector: { text: { multiline: false } },
-    context: { hint: 'Kommagetrennt, z. B. "fussboden, fußboden"' },
-    flatten: true,
-  },
-];
-
 class RoomClimateCardEditor extends HTMLElement {
   constructor() {
     super();
@@ -1341,17 +1311,30 @@ class RoomClimateCardEditor extends HTMLElement {
     this._render();
   }
 
-  _normalize(config) {
-    const c = { ...config };
-    if (Array.isArray(c.exclude_areas)) {
-      c.exclude_areas = c.exclude_areas.join(", ");
-    }
-    return c;
+  _update(patch) {
+    this._config = { ...this._config, ...patch };
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: this._config },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _render() {
     if (!this.shadowRoot) return;
-    if (!this._config) return;
+
+    const config = this._config || {};
+    const title = typeof config.title === "string" ? config.title : "";
+    const columns = Number.isFinite(Number(config.columns))
+      ? Math.min(4, Math.max(1, Number(config.columns)))
+      : 2;
+    const exclude = Array.isArray(config.exclude_areas)
+      ? config.exclude_areas.join(", ")
+      : typeof config.exclude_areas === "string"
+        ? config.exclude_areas
+        : "";
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -1361,47 +1344,108 @@ class RoomClimateCardEditor extends HTMLElement {
         }
         .editor {
           display: grid;
-          gap: 16px;
+          gap: 20px;
           padding: 8px 0;
         }
-        ha-form {
+        .row {
+          display: grid;
+          gap: 6px;
+        }
+        .row label {
+          font-weight: 500;
+          color: var(--primary-text-color);
+        }
+        .row .hint {
+          font-size: 0.8rem;
+          color: var(--secondary-text-color);
+        }
+        .columns-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .columns-row ha-icon-button {
+          --mdc-icon-button-size: 36px;
+        }
+        .columns-row .value {
+          min-width: 24px;
+          text-align: center;
+          font-weight: 600;
+        }
+        ha-textfield,
+        ha-slider {
           width: 100%;
         }
       </style>
-      <div class="editor"></div>
+      <div class="editor">
+        <div class="row">
+          <label>Titel</label>
+          <ha-textfield
+            label="Titel"
+            value="${this._attr(title)}"
+            @change="${this._onTitle}"
+          ></ha-textfield>
+        </div>
+
+        <div class="row">
+          <label>Spalten</label>
+          <div class="columns-row">
+            <ha-icon-button
+              label="Weniger Spalten"
+              @click="${this._onColumns}"
+              data-delta="-1"
+              ><ha-icon icon="mdi:minus"></ha-icon
+            ></ha-icon-button>
+            <span class="value">${columns}</span>
+            <ha-icon-button
+              label="Mehr Spalten"
+              @click="${this._onColumns}"
+              data-delta="1"
+              ><ha-icon icon="mdi:plus"></ha-icon
+            ></ha-icon-button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Ausgeschlossene Bereiche</label>
+          <ha-textfield
+            label="Ausgeschlossene Bereiche"
+            value="${this._attr(exclude)}"
+            helper="Kommagetrennt, z. B. fussboden, fußboden"
+            @change="${this._onExclude}"
+          ></ha-textfield>
+        </div>
+      </div>
     `;
-
-    const form = document.createElement("ha-form");
-    form.hass = this._hass;
-    form.data = this._normalize(this._config);
-    form.schema = ROOM_CLIMATE_EDITOR_SCHEMA;
-    form.computeLabel = (schema) => schema.label || schema.name;
-    form.computeHelper = (schema) =>
-      schema.name === "exclude_areas"
-        ? 'Kommagetrennt, z. B. "fussboden, fußboden"'
-        : "";
-    form.addEventListener("value-changed", (ev) => this._valueChanged(ev));
-
-    this.shadowRoot.querySelector(".editor").appendChild(form);
   }
 
-  _valueChanged(ev) {
-    const value = ev.detail.value;
-    const newConfig = { ...value };
-    if (typeof newConfig.exclude_areas === "string") {
-      newConfig.exclude_areas = newConfig.exclude_areas
+  _attr(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  _onTitle(ev) {
+    this._update({ title: ev.target.value });
+  }
+
+  _onExclude(ev) {
+    this._update({
+      exclude_areas: ev.target.value
         .split(",")
         .map((item) => item.trim())
-        .filter((item) => item.length > 0);
-    }
-    this._config = newConfig;
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: newConfig },
-        bubbles: true,
-        composed: true,
-      })
-    );
+        .filter((item) => item.length > 0),
+    });
+  }
+
+  _onColumns(ev) {
+    const delta = Number(ev.currentTarget.dataset.delta);
+    const current = Number.isFinite(Number(this._config.columns))
+      ? Number(this._config.columns)
+      : 2;
+    this._update({ columns: Math.min(4, Math.max(1, current + delta)) });
   }
 }
 
