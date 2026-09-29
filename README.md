@@ -9,7 +9,11 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
 - **Automatische Erkennung** von Bereichen (Areas), Etagen (Floors) sowie Temperatur- und Luftfeuchtigkeitssensoren über das Entity-/Device-Registry.
 - **Etagen-Ansicht**: Räume werden nach Etage gruppiert und sortiert dargestellt.
 - **Detailansicht pro Raum** mit Durchschnittswerten und Verlaufsdiagramm (12/24 Stunden).
-- **Klimasteuerung** (optional): Steuerung von TRV-/Klimageräten direkt aus der Karte (Modi + Temperatur).
+- **Klimasteuerung** (optional): Steuerung beliebiger `climate.*`-Geräte (z. B. TRV oder Better Thermostat) direkt aus der Karte –
+  - **Temperatur-Dial** (Dreh-/Klickregler wie HA bzw. Better Thermostat),
+  - **HVAC-Modus als Dropdown** (z. B. off/heat/auto) mit Anzeige des aktuellen Zustands,
+  - **Presets** aus dem Gerät (`preset_modes`), bei Geräten ohne Presets ausgegraut.
+- **Visueller Editor**: Die Karte kann im Dashboard sowohl per YAML als auch über die GUI konfiguriert werden.
 - **Live-Update**: Reagiert automatisch auf Änderungen im Bereichs-, Etagen-, Entitäts- und Geräte-Registry.
 
 ## Installation
@@ -53,13 +57,16 @@ exclude_areas:
 | --------------- | ------- | --------------- | -------------------------------------------------------- |
 | `title`         | string  | `Temperaturen/Luftfeuchtigkeit` | Titel der Karte.                           |
 | `columns`       | number  | `2`             | Anzahl der Raum-Spalten pro Etage (1–4).                 |
-| `exclude_areas` | list    | `["fussboden", "fußboden"]` | Bereiche, die nicht angezeigt werden (Name oder Area-ID). |
+| `exclude_areas` | list    | `["fussboden", "fußboden"]` | Bereiche, die nicht angezeigt werden (per **Bereichsname** oder **Area-ID**). |
+
+> **Hinweis:** `exclude_areas` prüft ausschließlich **Area-Namen/-IDs**. Möchtest du eine gesamte **Etage** ausschließen, blende den jeweiligen Bereich bzw. dessen Areas entsprechend aus.
 
 ## Funktionsweise / Voraussetzungen
 
 - Die Karte nutzt die WebSocket-APIs (`config/area_registry/list`, `config/floor_registry/list`, `config/entity_registry/list`, `config/device_registry/list`) sowie die Verlaufs-API.
 - Sensoren werden über ihre `device_class` (`temperature` / `humidity`) erkannt. Sie müssen einem Bereich (Area) zugeordnet sein (direkt oder über ihr Gerät bzw. das übergeordnete Gerät).
-- Klimageräte werden über die Domain `climate.` erkannt und können, wenn sie einem Bereich zugeordnet sind, gesteuert werden.
+- Klimageräte werden über die Domain `climate.` erkannt. Wenn sie einem Bereich zugeordnet sind (direkt oder über ihr Gerät), erscheinen sie in der Detailansicht des Raumes mit Temperatur-Dial, HVAC-Dropdown und (sofern vorhanden) Presets.
+- Für den **visuellen Editor** genügt die normale Dashboard-Integration; die Karte stellt automatisch ein Konfigurationsformular bereit.
 
 ## Lizenz
 
