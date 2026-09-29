@@ -24,7 +24,7 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
 2. Klicke auf **„Benutzerdefiniertes Repository hinzufügen“** (`⋮` → Custom repositories).
 3. Füge die folgende URL ein:
    ```
-   https://git.stebot76.noip.me/stephan/room-climate-card
+   https://github.com/sbot2/room-climate-card
    ```
 4. Wähle als Kategorie **Lovelace**.
 5. Lade Home Assistant neu (ggf. `Strg+Shift+R` im Browser).

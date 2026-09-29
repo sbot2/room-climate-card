@@ -42,6 +42,8 @@ Räume (Bereiche) ohne **einen einzigen** Temperatur-/Feuchte-Wert **und** ohne 
 
 ## HACS / Repo
 
+- HACS-Custom-Repository (Installation): `https://github.com/sbot2/room-climate-card`
+- Selbst gehostetes Forgejo (Entwicklung/Origin): `https://git.stebot76.noip.me/stephan/room-climate-card`
 - `hacs.json` mit `content_in_root: true` und `filename: room-climate-card.js`.
 - Kategorie im HACS-Store: **Dashboard** (Frontend).
 - Keine CI/Workflows mehr (`.github` wurde entfernt – das Repo liegt auf einem selbst gehosteten Forgejo, HACS-Validierung wäre dort nicht nutzbar).
