@@ -73,12 +73,12 @@ class RoomClimateCard extends HTMLElement {
       columns: 12,
       rows: 6,
       min_columns: 6,
-      min_rows: 4,
+      min_rows: 3,
     };
   }
 
   getCardSize() {
-    return Math.max(4, this._areas.length * 2 + 2);
+    return 5;
   }
 
   async _loadRegistry() {
