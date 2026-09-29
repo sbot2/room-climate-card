@@ -30,7 +30,12 @@ class RoomClimateCard extends HTMLElement {
       exclude_areas: ["fussboden", "fußboden"],
       ...config,
     };
-    if (!Array.isArray(this._config.exclude_areas)) {
+    if (typeof this._config.exclude_areas === "string") {
+      this._config.exclude_areas = this._config.exclude_areas
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    } else if (!Array.isArray(this._config.exclude_areas)) {
       this._config.exclude_areas = ["fussboden", "fußboden"];
     }
     this._render();
@@ -1312,7 +1317,32 @@ class RoomClimateCardEditor extends HTMLElement {
     this._config = { ...config };
     if (!this.shadowRoot.querySelector("#title")) {
       this._render();
+    } else {
+      this._syncFields();
     }
+  }
+
+  _syncFields() {
+    if (!this.shadowRoot) return;
+    const config = this._config || {};
+    const titleField = this.shadowRoot.querySelector("#title");
+    const excludeField = this.shadowRoot.querySelector("#exclude");
+    const valueEl = this.shadowRoot.querySelector("#cols-value");
+    const exclude = Array.isArray(config.exclude_areas)
+      ? config.exclude_areas.join(", ")
+      : typeof config.exclude_areas === "string"
+        ? config.exclude_areas
+        : "";
+    if (titleField && document.activeElement !== titleField) {
+      titleField.value = typeof config.title === "string" ? config.title : "";
+    }
+    if (excludeField && document.activeElement !== excludeField) {
+      excludeField.value = exclude;
+    }
+    const columns = Number.isFinite(Number(config.columns))
+      ? Math.min(4, Math.max(1, Number(config.columns)))
+      : 2;
+    if (valueEl) valueEl.textContent = columns;
   }
 
   set hass(hass) {
@@ -1453,7 +1483,17 @@ class RoomClimateCardEditor extends HTMLElement {
         const current = Number.isFinite(Number(this._config.columns))
           ? Number(this._config.columns)
           : 2;
-        this._update({ columns: Math.min(4, Math.max(1, current + delta)) });
+        const next = Math.min(4, Math.max(1, current + delta));
+        this._config = { ...this._config, columns: next };
+        const valueEl = this.shadowRoot.querySelector("#cols-value");
+        if (valueEl) valueEl.textContent = next;
+        this.dispatchEvent(
+          new CustomEvent("config-changed", {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+          })
+        );
       });
     });
   }
