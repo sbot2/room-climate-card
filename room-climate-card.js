@@ -1347,22 +1347,9 @@ class RoomClimateCardEditor extends HTMLElement {
     return c;
   }
 
-  _computeLabel(schema) {
-    return schema.label || schema.name;
-  }
-
-  _computeHelper(schema) {
-    if (schema.name === "exclude_areas") {
-      return 'Kommagetrennt, z. B. "fussboden, fußboden"';
-    }
-    return "";
-  }
-
   _render() {
     if (!this.shadowRoot) return;
     if (!this._config) return;
-
-    const config = this._normalize(this._config);
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -1379,17 +1366,21 @@ class RoomClimateCardEditor extends HTMLElement {
           width: 100%;
         }
       </style>
-      <div class="editor">
-        <ha-form
-          .hass=${this._hass}
-          .data=${config}
-          .schema=${ROOM_CLIMATE_EDITOR_SCHEMA}
-          .computeLabel=${this._computeLabel}
-          .computeHelper=${this._computeHelper}
-          @value-changed=${this._valueChanged}
-        ></ha-form>
-      </div>
+      <div class="editor"></div>
     `;
+
+    const form = document.createElement("ha-form");
+    form.hass = this._hass;
+    form.data = this._normalize(this._config);
+    form.schema = ROOM_CLIMATE_EDITOR_SCHEMA;
+    form.computeLabel = (schema) => schema.label || schema.name;
+    form.computeHelper = (schema) =>
+      schema.name === "exclude_areas"
+        ? 'Kommagetrennt, z. B. "fussboden, fußboden"'
+        : "";
+    form.addEventListener("value-changed", (ev) => this._valueChanged(ev));
+
+    this.shadowRoot.querySelector(".editor").appendChild(form);
   }
 
   _valueChanged(ev) {
