@@ -27,16 +27,18 @@ class RoomClimateCard extends HTMLElement {
     this._config = {
       title: "Temperaturen/Luftfeuchtigkeit",
       columns: 2,
-      exclude_areas: ["fussboden", "fußboden"],
       ...config,
     };
+    if (this._config.exclude_areas === undefined) {
+      this._config.exclude_areas = ["fussboden", "fußboden"];
+    }
     if (typeof this._config.exclude_areas === "string") {
       this._config.exclude_areas = this._config.exclude_areas
         .split(",")
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
     } else if (!Array.isArray(this._config.exclude_areas)) {
-      this._config.exclude_areas = ["fussboden", "fußboden"];
+      this._config.exclude_areas = [];
     }
     this._render();
   }
