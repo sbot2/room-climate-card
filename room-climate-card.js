@@ -249,12 +249,19 @@ class RoomClimateCard extends HTMLElement {
         deviceId: entry.device_id || null,
       });
     }
-    return [...roomMap.values()].map((room) => ({
-      ...room,
-      tempAverage: this._average(room.temperature),
-      humidityAverage: this._average(room.humidity),
-      deviceCount: room.deviceIds.size,
-    }));
+    return [...roomMap.values()]
+      .filter(
+        (room) =>
+          room.temperature.length > 0 ||
+          room.humidity.length > 0 ||
+          room.climate.length > 0
+      )
+      .map((room) => ({
+        ...room,
+        tempAverage: this._average(room.temperature),
+        humidityAverage: this._average(room.humidity),
+        deviceCount: room.deviceIds.size,
+      }));
   }
 
   _average(items) {
@@ -1381,9 +1388,9 @@ class RoomClimateCardEditor extends HTMLElement {
         <div class="row">
           <label>Titel</label>
           <ha-textfield
+            id="title"
             label="Titel"
             value="${this._attr(title)}"
-            @change="${this._onTitle}"
           ></ha-textfield>
         </div>
 
@@ -1391,15 +1398,15 @@ class RoomClimateCardEditor extends HTMLElement {
           <label>Spalten</label>
           <div class="columns-row">
             <ha-icon-button
+              id="cols-minus"
               label="Weniger Spalten"
-              @click="${this._onColumns}"
               data-delta="-1"
               ><ha-icon icon="mdi:minus"></ha-icon
             ></ha-icon-button>
-            <span class="value">${columns}</span>
+            <span class="value" id="cols-value">${columns}</span>
             <ha-icon-button
+              id="cols-plus"
               label="Mehr Spalten"
-              @click="${this._onColumns}"
               data-delta="1"
               ><ha-icon icon="mdi:plus"></ha-icon
             ></ha-icon-button>
@@ -1409,14 +1416,43 @@ class RoomClimateCardEditor extends HTMLElement {
         <div class="row">
           <label>Ausgeschlossene Bereiche</label>
           <ha-textfield
+            id="exclude"
             label="Ausgeschlossene Bereiche"
             value="${this._attr(exclude)}"
             helper="Kommagetrennt, z. B. fussboden, fußboden"
-            @change="${this._onExclude}"
           ></ha-textfield>
         </div>
       </div>
     `;
+
+    const titleField = this.shadowRoot.querySelector("#title");
+    if (titleField) {
+      titleField.addEventListener("change", (ev) =>
+        this._update({ title: ev.target.value })
+      );
+    }
+
+    const excludeField = this.shadowRoot.querySelector("#exclude");
+    if (excludeField) {
+      excludeField.addEventListener("change", (ev) =>
+        this._update({
+          exclude_areas: ev.target.value
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0),
+        })
+      );
+    }
+
+    this.shadowRoot.querySelectorAll(".columns-row ha-icon-button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const delta = Number(btn.dataset.delta);
+        const current = Number.isFinite(Number(this._config.columns))
+          ? Number(this._config.columns)
+          : 2;
+        this._update({ columns: Math.min(4, Math.max(1, current + delta)) });
+      });
+    });
   }
 
   _attr(value) {
@@ -1425,27 +1461,6 @@ class RoomClimateCardEditor extends HTMLElement {
       .replaceAll('"', "&quot;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
-  }
-
-  _onTitle(ev) {
-    this._update({ title: ev.target.value });
-  }
-
-  _onExclude(ev) {
-    this._update({
-      exclude_areas: ev.target.value
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    });
-  }
-
-  _onColumns(ev) {
-    const delta = Number(ev.currentTarget.dataset.delta);
-    const current = Number.isFinite(Number(this._config.columns))
-      ? Number(this._config.columns)
-      : 2;
-    this._update({ columns: Math.min(4, Math.max(1, current + delta)) });
   }
 }
 
