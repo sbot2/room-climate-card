@@ -492,7 +492,9 @@ _historySeries(room, hours) {
     const width = 760;
     const height = 200;
     const pad = { l: 44, lr: 44, t: 18, b: 28 };
-    const totalHours = Math.round((series.end.getTime() - series.start.getTime()) / 3600000) || 24;
+    const end = series.end || new Date();
+    const start = series.start || new Date(end.getTime() - (hours || 24) * 60 * 60 * 1000);
+    const totalHours = Math.round((end.getTime() - start.getTime()) / 3600000) || hours || 24;
 
     const tempValues = series.temp.filter((v) => v !== null);
     const humValues = series.humidity.filter((v) => v !== null);
@@ -581,7 +583,7 @@ _historySeries(room, hours) {
     const xLabels = [0, 0.25, 0.5, 0.75, 1].map((frac) => {
       const hour = frac * totalHours;
       const xx = pad.l + (hour / totalHours) * (width - pad.l - pad.lr);
-      const d = new Date(series.start.getTime() + hour * 60 * 60 * 1000);
+      const d = new Date(start.getTime() + hour * 60 * 60 * 1000);
       const text = d.toLocaleTimeString("de-DE", {
         hour: "2-digit",
         minute: "2-digit",
