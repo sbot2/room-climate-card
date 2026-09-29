@@ -1412,6 +1412,7 @@ class RoomClimateCardEditor extends HTMLElement {
   }
 }
 
+customElements.define("room-climate-card", RoomClimateCard);
 customElements.define("room-climate-card-editor", RoomClimateCardEditor);
 
 window.customEditors = window.customEditors || [];
