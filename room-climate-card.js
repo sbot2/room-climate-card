@@ -299,6 +299,12 @@ class RoomClimateCard extends HTMLElement {
     });
   }
 
+  _setPresetMode(climate, preset) {
+    return this._callService("climate", "set_preset_mode", [climate.entityId], {
+      preset_mode: preset,
+    });
+  }
+
   _climateControl(room) {
     if (!room.climate.length) return "";
 
@@ -308,40 +314,68 @@ class RoomClimateCard extends HTMLElement {
       const a = st.attributes || {};
       const minTemp = Number(a.min_temp);
       const maxTemp = Number(a.max_temp);
-      const current = Number(a.temperature);
-      const target = Number(a.temperature ?? this._hass.states?.[climate.entityId]?.state);
+      const target = Number(st.state) || Number(a.temperature);
+      const current = Number(a.current_temperature) || Number(a.temperature) || target;
 
       const hvacModes = Array.isArray(a.hvac_modes)
         ? a.hvac_modes
         : ["off", "heat", "cool", "auto"];
       const currentMode = st.state;
+      const presetModes = Array.isArray(a.preset_modes) ? a.preset_modes : [];
+      const currentPreset = a.preset_mode || "";
 
-      const modeButtons = hvacModes.map(
-        (mode) => `
-          <button
-            class="hvac-mode ${mode === currentMode ? "active" : ""}"
-            data-hvac="${this._escape(climate.entityId)}"
-            data-mode="${this._escape(mode)}"
-          >${this._escape(mode)}</button>
-        `
-      ).join("");
+      const hasRange = Number.isFinite(minTemp) && Number.isFinite(maxTemp);
+      const shownTemp = Number.isFinite(target) && Number.isFinite(current)
+        ? `${this._format(current, 1)}° → ${this._format(target, 1)}°`
+        : this._format(target, 1);
 
-      const tempButtons = [];
-      if (Number.isFinite(minTemp) && Number.isFinite(maxTemp) && Number.isFinite(target)) {
-        tempButtons.push(
-          `<button class="temp-btn minus" data-temp="${this._escape(climate.entityId)}" data-delta="-1">−</button>`,
-          `<span class="temp-value">${this._format(target, 1)} °C</span>`,
-          `<button class="temp-btn plus" data-temp="${this._escape(climate.entityId)}" data-delta="1">+</button>`
-        );
-      } else {
-        tempButtons.push(`<span class="temp-value">${this._format(current, 1)} °C</span>`);
-      }
+      const modeOptions = hvacModes
+        .map(
+          (m) =>
+            `<option value="${this._escape(m)}" ${m === currentMode ? "selected" : ""}>${this._escape(m)}</option>`
+        )
+        .join("");
+
+      const presetButtons = presetModes.length
+        ? presetModes
+            .map(
+              (p) => `
+                <button
+                  class="preset-btn ${p === currentPreset ? "active" : ""}"
+                  data-preset="${this._escape(climate.entityId)}"
+                  data-preset-value="${this._escape(p)}"
+                >${this._escape(p)}</button>
+              `
+            )
+            .join("")
+        : `<div class="presets-empty">Keine Presets verfügbar</div>`;
+
+      const dial = hasRange && Number.isFinite(target)
+        ? this._dialSvg(climate.entityId, target, minTemp, maxTemp)
+        : `<div class="dial-value-text">${this._format(target, 1)} °C</div>`;
 
       return `
-        <div class="climate-control">
+        <div class="climate-control" data-climate="${this._escape(climate.entityId)}">
           <div class="climate-name">${this._escape(climate.name)}</div>
-          <div class="climate-modes">${modeButtons}</div>
-          <div class="climate-temp">${tempButtons.join("")}</div>
+
+          <div class="climate-dial-row">
+            <div class="dial-wrap">
+              ${dial}
+              <div class="dial-readout">${this._escape(shownTemp)}</div>
+            </div>
+            <div class="climate-actions">
+              <label class="field-label">Modus</label>
+              <select class="mode-select" data-hvac="${this._escape(climate.entityId)}">
+                ${modeOptions}
+              </select>
+              <div class="hvac-action-line">${this._escape(a.hvac_action || currentMode || "")}</div>
+            </div>
+          </div>
+
+          <div class="preset-row">
+            <div class="field-label">Presets</div>
+            <div class="preset-list">${presetButtons}</div>
+          </div>
         </div>
       `;
     });
@@ -351,6 +385,58 @@ class RoomClimateCard extends HTMLElement {
         <h3>🌡 Klimasteuerung</h3>
         ${controls.join("")}
       </section>
+    `;
+  }
+
+  _dialSvg(entityId, target, min, max) {
+    const size = 150;
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = 62;
+    const startAngle = -135;
+    const spanAngle = 270;
+    const norm = (val) => {
+      const t = Math.max(min, Math.min(max, val));
+      return (t - min) / (max - min <= 0 ? 1 : max - min);
+    };
+    const frac = norm(target);
+    const endAngle = startAngle + spanAngle * frac;
+    const polar = (angleDeg, radius) => {
+      const a = ((angleDeg - 90) * Math.PI) / 180;
+      return [cx + radius * Math.cos(a), cy + radius * Math.sin(a)];
+    };
+    const describeArc = (a1, a2, radius) => {
+      const [x1, y1] = polar(a1, radius);
+      const [x2, y2] = polar(a2, radius);
+      const large = Math.abs(a2 - a1) <= 180 ? 0 : 1;
+      return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${radius} ${radius} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    };
+    const [dx, dy] = polar(endAngle, r);
+    const [mx, my] = polar(endAngle, r - 14);
+
+    return `
+      <svg
+        class="temp-dial"
+        viewBox="0 0 ${size} ${size}"
+        width="${size}"
+        height="${size}"
+        data-climate-dial="${this._escape(entityId)}"
+        data-target="${target}"
+      >
+        <circle class="dial-track" cx="${cx}" cy="${cy}" r="${r}"></circle>
+        <path
+          class="dial-arc"
+          d="${describeArc(startAngle, endAngle, r)}"
+        ></path>
+        <circle class="dial-outer" cx="${cx}" cy="${cy}" r="${r}"></circle>
+        <line
+          class="dial-indicator"
+          x1="${dx.toFixed(1)}" y1="${dy.toFixed(1)}"
+          x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}"
+        ></line>
+        <text class="dial-center" x="${cx}" y="${cy + 1}" text-anchor="middle">${this._format(target, 1)}°</text>
+        <text class="dial-unit" x="${cx}" y="${cy + 18}" text-anchor="middle">Zieltemperatur</text>
+      </svg>
     `;
   }
 
@@ -723,34 +809,59 @@ _historySeries(room, hours) {
           });
         });
 
-        this.shadowRoot.querySelectorAll("[data-hvac]").forEach((button) => {
-          button.addEventListener("click", () => {
+        this.shadowRoot.querySelectorAll("select.mode-select[data-hvac]").forEach((select) => {
+          select.addEventListener("change", () => {
             const climate = room.climate.find(
-              (c) => c.entityId === button.dataset.hvac
+              (c) => c.entityId === select.dataset.hvac
             );
-            if (climate) this._setHvacMode(climate, button.dataset.mode);
+            if (climate) this._setHvacMode(climate, select.value);
           });
         });
 
-        this.shadowRoot.querySelectorAll("[data-temp]").forEach((button) => {
+        this.shadowRoot.querySelectorAll("button.preset-btn[data-preset]").forEach((button) => {
           button.addEventListener("click", () => {
             const climate = room.climate.find(
-              (c) => c.entityId === button.dataset.temp
+              (c) => c.entityId === button.dataset.preset
             );
-            if (!climate) return;
-            const st = this._climateState(climate);
-            const a = st?.attributes || {};
-            const min = Number(a.min_temp);
-            const max = Number(a.max_temp);
-            const delta = Number(button.dataset.delta);
-            const base = Number(a.temperature);
-            if (!Number.isFinite(base)) return;
-            let next = base + delta;
-            if (Number.isFinite(min)) next = Math.max(min, next);
-            if (Number.isFinite(max)) next = Math.min(max, next);
-            this._setTemperature(climate, next);
+            if (climate) this._setPresetMode(climate, button.dataset.presetValue);
           });
         });
+
+        this.shadowRoot
+          .querySelectorAll("svg.temp-dial[data-climate-dial]")
+          .forEach((svg) => {
+            const applyFromEvent = (ev) => {
+              const climate = room.climate.find(
+                (c) => c.entityId === svg.dataset.climateDial
+              );
+              if (!climate) return;
+              const st = this._climateState(climate);
+              const a = st?.attributes || {};
+              const min = Number(a.min_temp);
+              const max = Number(a.max_temp);
+              if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+
+              const rect = svg.getBoundingClientRect();
+              const cx = rect.left + rect.width / 2;
+              const cy = rect.top + rect.height / 2;
+              const angle = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI;
+              const norm = ((angle + 90) % 360 + 360) % 360;
+              const start = -135;
+              const span = 270;
+              let rel = (norm - ((start % 360) + 360) % 360 + 360) % 360;
+              rel = Math.min(span, Math.max(0, rel));
+              const value = min + (rel / span) * (max - min);
+              const stepped = Math.round(value * 2) / 2;
+              this._setTemperature(climate, Math.min(max, Math.max(min, stepped)));
+            };
+            svg.addEventListener("click", applyFromEvent);
+            svg.addEventListener(
+              "pointermove",
+              (ev) => {
+                if (ev.buttons & 1) applyFromEvent(ev);
+              }
+            );
+          });
 
         return;
       }
@@ -1081,59 +1192,147 @@ _historySeries(room, hours) {
           margin-bottom: 9px;
         }
 
-        .climate-modes {
+        .climate-dial-row {
+          display: flex;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+
+        .dial-wrap {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .temp-dial {
+          display: block;
+          cursor: pointer;
+          touch-action: none;
+        }
+
+        .dial-track {
+          fill: none;
+          stroke: var(--secondary-background-color, rgba(127,127,127,0.25));
+          stroke-width: 8;
+        }
+
+        .dial-arc {
+          fill: none;
+          stroke: var(--primary-color);
+          stroke-width: 8;
+          stroke-linecap: round;
+        }
+
+        .dial-outer {
+          fill: var(--card-background-color, rgba(0,0,0,0.04));
+          stroke: var(--room-border);
+          stroke-width: 1.5;
+        }
+
+        .dial-indicator {
+          stroke: var(--primary-color);
+          stroke-width: 5;
+          stroke-linecap: round;
+        }
+
+        .dial-center {
+          fill: var(--primary-text-color);
+          font-size: 26px;
+          font-weight: 700;
+        }
+
+        .dial-unit {
+          fill: var(--secondary-text-color);
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .dial-readout {
+          margin-top: 4px;
+          text-align: center;
+          font-size: 0.8rem;
+          color: var(--secondary-text-color);
+        }
+
+        .climate-actions {
+          flex: 1;
+          display: grid;
+          gap: 8px;
+        }
+
+        .field-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          color: var(--secondary-text-color);
+        }
+
+        .mode-select {
+          width: 100%;
+          appearance: none;
+          box-sizing: border-box;
+          padding: 8px 12px;
+          border: 1px solid var(--room-border);
+          border-radius: 10px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font: inherit;
+          font-weight: 600;
+          text-transform: capitalize;
+          cursor: pointer;
+        }
+
+        .hvac-action-line {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--primary-color);
+          text-transform: capitalize;
+        }
+
+        .preset-row {
+          margin-top: 8px;
+        }
+
+        .preset-list {
           display: flex;
           flex-wrap: wrap;
           gap: 6px;
-          margin-bottom: 10px;
+          margin-top: 4px;
         }
 
-        .hvac-mode {
+        .preset-btn {
           appearance: none;
           border: 1px solid var(--room-border);
           border-radius: 999px;
           background: transparent;
           color: var(--secondary-text-color);
           font: inherit;
-          font-size: 0.78rem;
+          font-size: 0.75rem;
           font-weight: 600;
           text-transform: capitalize;
           padding: 5px 12px;
           cursor: pointer;
-          transition: background 120ms ease, color 120ms ease;
+          transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
         }
 
-        .hvac-mode.active {
+        .preset-btn.active {
           background: var(--primary-color);
           color: var(--text-primary-color, #fff);
           border-color: var(--primary-color);
         }
 
-        .climate-temp {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
+        .presets-empty {
+          font-size: 0.78rem;
+          color: var(--secondary-text-color);
+          opacity: 0.6;
         }
 
-        .temp-btn {
-          appearance: none;
-          width: 36px;
-          height: 36px;
-          border: 1px solid var(--room-border);
-          border-radius: 10px;
-          background: var(--secondary-background-color);
-          color: var(--primary-text-color);
-          font: inherit;
-          font-size: 1.1rem;
-          line-height: 1;
-          cursor: pointer;
-        }
-
-        .temp-value {
-          font-weight: 600;
-          font-size: 1rem;
-          min-width: 64px;
-          text-align: center;
+        .dial-value-text {
+          font-size: 1.2rem;
+          font-weight: 700;
+          padding: 12px 0;
         }
 
         .sensor-row {
