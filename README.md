@@ -26,7 +26,7 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
    ```
    https://github.com/sbot2/room-climate-card
    ```
-4. Wähle als Kategorie **Lovelace**.
+4. Wähle als Kategorie **Dashboard**.
 5. Lade Home Assistant neu (ggf. `Strg+Shift+R` im Browser).
 
 ### Manuell
