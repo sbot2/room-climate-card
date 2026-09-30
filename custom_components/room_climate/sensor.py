@@ -24,6 +24,9 @@ async def async_setup_entry(
     if coordinator is None:
         return
     coordinator.register_platform(async_add_entities)
+    sensors = await coordinator.async_refresh()
+    if sensors:
+        async_add_entities(sensors)
 
 
 class RoomClimateAverageSensor(SensorEntity):

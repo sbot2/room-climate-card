@@ -72,16 +72,15 @@ class RoomClimateCoordinator:
         self._task = None
 
     def register_platform(self, async_add_entities) -> None:
-        """Register a platform add-entities callback tied to entry unload."""
+        """Register the platform add-entities callback (for later additions)."""
         self._platform_add = async_add_entities
-        self._publish()
 
     async def async_setup(self) -> None:
         """Register platform setup and initial discovery."""
         await self.hass.config_entries.async_forward_entry_setups(
             self.entry, PLATFORMS
         )
-        # Run initial discovery once HA is started
+        # Rescan periodically to pick up registry/area changes
         self._unsubs.append(
             self.hass.bus.async_listen_once(
                 EVENT_HOMEASSISTANT_STARTED, self._initial_scan
@@ -89,8 +88,9 @@ class RoomClimateCoordinator:
         )
 
     async def _initial_scan(self, _event=None) -> None:
-        """Perform the initial registry scan."""
-        await self.async_refresh()
+        """Perform the initial registry scan and publish new sensors."""
+        sensors = await self.async_refresh()
+        self._publish(pending=sensors)
 
     async def async_unload(self) -> None:
         """Clean up on unload."""
@@ -183,23 +183,30 @@ class RoomClimateCoordinator:
             if key not in wanted:
                 self._sensors.pop(key)
 
-        self._publish()
+        return list(wanted.values())
 
     def _key(self, area_id: str, dev_class: str) -> str:
         return f"{area_id}_{dev_class}"
 
-    def _publish(self) -> None:
+    def _publish(self, pending=None) -> None:
         """Deliver newly-created sensors to the registered platform."""
         if self._platform_add is None:
             return
+        if pending is None:
+            pending = [
+                sensor
+                for key, sensor in self._sensors.items()
+                if key not in self._published
+            ]
         pending = [
-            sensor
-            for key, sensor in self._sensors.items()
-            if key not in self._published
+            s
+            for s in pending
+            if self._key(s._area_id, s._device_class) not in self._published
         ]
         if not pending:
             return
         for sensor in pending:
-            key = self._key(sensor._area_id, sensor._device_class)
-            self._published.add(key)
+            self._published.add(
+                self._key(sensor._area_id, sensor._device_class)
+            )
         self._platform_add(pending)
