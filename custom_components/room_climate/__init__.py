@@ -80,11 +80,10 @@ class RoomClimateCoordinator:
         await self.hass.config_entries.async_forward_entry_setups(
             self.entry, PLATFORMS
         )
-        # Rescan periodically to pick up registry/area changes
-        self._unsubs.append(
-            self.hass.bus.async_listen_once(
-                EVENT_HOMEASSISTANT_STARTED, self._initial_scan
-            )
+        # Rescan after HA is fully started (once). This listener must not be
+        # unsubscribed manually, because it auto-removes itself after firing.
+        self.hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_STARTED, self._initial_scan
         )
 
     async def _initial_scan(self, _event=None) -> None:
@@ -94,12 +93,6 @@ class RoomClimateCoordinator:
 
     async def async_unload(self) -> None:
         """Clean up on unload."""
-        for unsub in self._unsubs:
-            try:
-                unsub()
-            except Exception:  # noqa: BLE001
-                pass
-        self._unsubs = []
         if self._task:
             self._task.cancel()
         await self.hass.config_entries.async_unload_platforms(self.entry, PLATFORMS)
