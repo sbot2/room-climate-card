@@ -118,7 +118,7 @@ class RoomClimateCoordinator:
                 continue
             if not entity.entity_id.startswith("sensor."):
                 continue
-            if entity.entity_id not in self.hass.states:
+            if entity.entity_id not in self.hass.states.async_entity_ids():
                 continue
             dev_class = None
             state = self.hass.states.get(entity.entity_id)
