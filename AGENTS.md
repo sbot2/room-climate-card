@@ -4,12 +4,15 @@ Arbeitsanweisungen und Projekt-Kontext für dieses Repository. Wird von Coding-A
 
 ## Projekt
 
-**Room Climate Card** – eine dynamische Lovelace-Karte für Home Assistant. Eine einzelne Datei `room-climate-card.js` (kein Build-Schritt, kein npm).
+**Room Climate Card** – eine dynamische Lovelace-Karte für Home Assistant. Eine einzelne Datei `room-climate-card.js` (kein Build-Schritt, kein npm) plus optionales Backend.
 
-Die Karte:
-- erkennt automatisch Bereiche (Areas), Etagen (Floors), Temperatur-/Luftfeuchtigkeitssensoren und `climate.*`-Geräte über das Area-/Floor-/Entity-/Device-Registry,
-- gruppiert Räume nach Etage, bietet eine Detailansicht pro Raum (Durchschnittswerte, Verlaufsdiagramm),
-- enthält eine Klimasteuerung in der Detailansicht (Temperatur-Dial, HVAC-Dropdown, Presets).
+Teile:
+- **Karte** (`room-climate-card.js`): erkennt automatisch Bereiche (Areas), Etagen (Floors), Temperatur-/Luftfeuchtigkeitssensoren und `climate.*`-Geräte über das Area-/Floor-/Entity-/Device-Registry,
+  - gruppiert Räume nach Etage, bietet eine Detailansicht pro Raum (Durchschnittswerte, Verlaufsdiagramm),
+  - enthält eine Klimasteuerung in der Detailansicht (Temperatur-Dial, HVAC-Dropdown, Presets).
+- **Backend-Integration** (`custom_components/room_climate/`): erzeugt automatisch echte HA-Durchschnittssensoren (Temperatur/Luftfeuchtigkeit) pro Bereich aus dem Entity-/Area-Registry. Die Karte erkennt diese über das `area_id`-Attribut und nutzt ihre Werte automatisch; ohne die Integration fällt sie auf die eigene Berechnung zurück.
+
+Hinweis: HACS installiert Karte (Frontend/Dashboard) und Integration (Integration) aus demselben Repo als **zwei** Installationen.
 
 ## Wichtige Regeln (bitte einhalten)
 

@@ -256,6 +256,7 @@ class RoomClimateCard extends HTMLElement {
         deviceId: entry.device_id || null,
       });
     }
+    const backendAverages = this._averageSensorScan();
     return [...roomMap.values()]
       .filter(
         (room) =>
@@ -263,12 +264,36 @@ class RoomClimateCard extends HTMLElement {
           room.humidity.length > 0 ||
           room.climate.length > 0
       )
-      .map((room) => ({
-        ...room,
-        tempAverage: this._average(room.temperature),
-        humidityAverage: this._average(room.humidity),
-        deviceCount: room.deviceIds.size,
-      }));
+      .map((room) => {
+        const backend = backendAverages.get(room.area.area_id);
+        return {
+          ...room,
+          tempAverage:
+            backend?.temperature ?? this._average(room.temperature),
+          humidityAverage:
+            backend?.humidity ?? this._average(room.humidity),
+          deviceCount: room.deviceIds.size,
+        };
+      });
+  }
+
+  _averageSensorScan() {
+    const result = new Map();
+    if (!this._hass?.states) return result;
+    for (const [entityId, state] of Object.entries(this._hass.states)) {
+      if (!entityId.startsWith("sensor.")) continue;
+      const areaId = state.attributes?.area_id;
+      if (!areaId) continue;
+      const deviceClass = state.attributes?.device_class;
+      if (deviceClass !== "temperature" && deviceClass !== "humidity") continue;
+      const value = this._numericState(entityId);
+      if (value === null) continue;
+      if (!result.has(areaId)) {
+        result.set(areaId, { temperature: null, humidity: null });
+      }
+      result.get(areaId)[deviceClass] = value;
+    }
+    return result;
   }
 
   _average(items) {
