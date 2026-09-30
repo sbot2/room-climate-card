@@ -7,5 +7,5 @@
   "codeowners": ["@stephan"],
   "config_flow": true,
   "iot_class": "local_push",
-  "integration_type": "entity"
+  "integration_type": "hub"
 }
