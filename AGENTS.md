@@ -47,8 +47,8 @@ Räume (Bereiche) ohne **einen einzigen** Temperatur-/Feuchte-Wert **und** ohne 
 
 - HACS-Custom-Repository (Installation): `https://github.com/sbot2/room-climate-card`
 - Selbst gehostetes Forgejo (Entwicklung/Origin): `https://git.stebot76.noip.me/stephan/room-climate-card`
-- `hacs.json` mit `content_in_root: true` und `filename: room-climate-card.js`.
-- Kategorie im HACS-Store: **Dashboard** (Frontend).
+- `hacs.json` mit `subdirectory: custom_components/room_climate`.
+- Kategorie im HACS-Store: **Integration** (das Repo wird primär als Integration installiert; die Karte wird aus demselben Repo als Frontend-Ressource eingebunden).
 - Keine CI/Workflows mehr (`.github` wurde entfernt – das Repo liegt auf einem selbst gehosteten Forgejo, HACS-Validierung wäre dort nicht nutzbar).
 - Git-Push kann gelegentlich mit `Credentials are incorrect` fehlschlagen. Bei **jedem** fehlgeschlagenen `git push` immer **zuerst automatisch einen zweiten Versuch** ausführen. Erst wenn auch der zweite Versuch scheitert, den Nutzer um manuelles Eingreifen bitten.
 

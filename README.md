@@ -19,20 +19,26 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
 
 ## Installation
 
-### HACS (empfohlen)
+> **Wichtig:** Dieses Repo enthält die **Backend-Integration** (`custom_components/room_climate`) und die **Karte** (`room-climate-card.js`). Die Installation primär als Integration über HACS.
 
-1. Öffne HACS → **Frontend**.
+### HACS (Integration)
+
+1. Öffne HACS → **Integrationen**.
 2. Klicke auf **„Benutzerdefiniertes Repository hinzufügen“** (`⋮` → Custom repositories).
 3. Füge die folgende URL ein:
    ```
    https://github.com/sbot2/room-climate-card
    ```
-4. Wähle als Kategorie **Dashboard**.
+4. Wähle als Kategorie **Integration**.
 5. Lade Home Assistant neu (ggf. `Strg+Shift+R` im Browser).
+6. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Room Climate Sensors“**.
+   Die Durchschnittssensoren werden daraufhin automatisch für alle Bereiche mit Temperatur-/Feuchtesensoren angelegt.
 
-### Manuell
+### Karte einbinden
 
-1. Lade `room-climate-card.js` herunter und lege sie in dein `www/`-Verzeichnis (`config/www/`).
+Die Karte liegt in diesem Repo und wird als Frontend-Ressource eingebunden:
+
+1. Lade `room-climate-card.js` (aus `dist/` bzw. dem Reporoot) herunter und lege sie in dein `www/`-Verzeichnis (`config/www/`).
 2. Füge in deine Lovelace-Ressourcen folgende Zeile ein (URL entsprechend anpassen, `/local/` für `www/`):
    ```yaml
    resources:
@@ -40,6 +46,12 @@ Eine dynamische Raumklima-Karte für Home Assistant. Sie erkennt automatisch Rä
        type: module
    ```
 3. Lade die Seite neu.
+
+### Manuell (Integration)
+
+1. Kopiere `custom_components/room_climate/` in dein `config/custom_components/`.
+2. Starte Home Assistant neu.
+3. Integration über **Einstellungen → Geräte & Dienste → Integration hinzufügen** aktivieren.
 
 ## Verwendung
 
@@ -78,14 +90,7 @@ Die Karte liegt zusammen mit einer optionalen **Backend-Integration** (`custom_c
 
 Diese Sensoren stehen dann als normale HA-Entitäten für History, Automationen und Dashboards zur Verfügung. Die Karte erkennt sie automatisch (über das `area_id`-Attribut) und verwendet ihre Werte für die Anzeige — sofern vorhanden. Fehlt die Integration, berechnet die Karte die Durchschnittswerte weiterhin selbst.
 
-### Installation der Backend-Integration
-
-1. Installiere die Integration in HACS (Kategorie **Integration**) bzw. lege `custom_components/room_climate/` in dein `config/`-Verzeichnis.
-2. Starte Home Assistant neu.
-3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Room Climate Sensors"**.
-4. Die Durchschnittssensoren werden daraufhin automatisch für alle Bereiche mit Temperatur-/Feuchtesensoren angelegt.
-
-> **Hinweis:** Da im selben Repo Karte (Frontend) und Integration (Backend) liegen, erfolgt die Installation über HACS in zwei Schritten (Karte als **Dashboard**-, Integration als **Integration**-Kategorie).
+Die Installation der Integration erfolgt über HACS (Kategorie **Integration**) — siehe Abschnitt [Installation](#installation) oben.
 
 ## Lizenz
 

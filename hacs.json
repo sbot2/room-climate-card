@@ -1,7 +1,6 @@
 {
-  "name": "Room Climate Card",
-  "filename": "room-climate-card.js",
-  "content_in_root": true,
+  "name": "Room Climate Sensors",
+  "subdirectory": "custom_components/room_climate",
   "render_readme": true,
   "hide_default_branch": true
 }
