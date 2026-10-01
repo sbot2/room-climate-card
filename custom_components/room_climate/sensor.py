@@ -6,9 +6,7 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_platform
-from homeassistant.helpers.entity import EntityCategory
-from homeassistant.helpers.template import Template
+from homeassistant.helpers.event import async_track_state_change_event
 
 from .const import DATA_ROOM_CLIMATE, DOMAIN
 
@@ -99,8 +97,8 @@ class RoomClimateAverageSensor(SensorEntity):
             if entity_id in self._child_updates:
                 continue
             self._child_updates.add(entity_id)
-            self.hass.helpers.event.async_track_state_change_event(
-                entity_id, self._state_changed
+            async_track_state_change_event(
+                self.hass, entity_id, self._state_changed
             )
 
     @callback
