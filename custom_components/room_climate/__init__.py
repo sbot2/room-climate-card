@@ -130,7 +130,7 @@ class RoomClimateCoordinator:
                         seen = set()
                         while parent and not area_id and parent.id not in seen:
                             seen.add(parent.id)
-                            parent = dr.async_get(parent.parent_device_id)
+                            parent = dr.async_get(parent.via_device_id)
                             if parent and parent.area_id:
                                 area_id = parent.area_id
             if not area_id:
