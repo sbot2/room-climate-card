@@ -85,6 +85,20 @@ class RoomClimateCoordinator:
         self.hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_STARTED, self._initial_scan
         )
+        # Rescan when the registries change so new sensors/areas are picked up.
+        for event_type in (
+            "entity_registry_updated",
+            "area_registry_updated",
+            "device_registry_updated",
+            "floor_registry_updated",
+        ):
+            self._unsubs.append(
+                self.hass.bus.async_listen(event_type, self._on_registry_updated)
+            )
+
+    async def _on_registry_updated(self, _event=None) -> None:
+        """Rescan when the registries change."""
+        await self._initial_scan()
 
     async def _initial_scan(self, _event=None) -> None:
         """Perform the initial registry scan and publish new sensors."""
@@ -93,6 +107,12 @@ class RoomClimateCoordinator:
 
     async def async_unload(self) -> None:
         """Clean up on unload."""
+        for unsub in self._unsubs:
+            try:
+                unsub()
+            except Exception:  # noqa: BLE001
+                pass
+        self._unsubs = []
         if self._task:
             self._task.cancel()
         await self.hass.config_entries.async_unload_platforms(self.entry, PLATFORMS)
